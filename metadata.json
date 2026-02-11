@@ -1,0 +1,5 @@
+{
+  "name": "Architectural 3D Visualizer",
+  "description": "An application that generates photorealistic 3D floor plan renderings from 2D images, ensuring architectural accuracy and visual consistency across multiple floors of a project.",
+  "requestFramePermissions": []
+}
