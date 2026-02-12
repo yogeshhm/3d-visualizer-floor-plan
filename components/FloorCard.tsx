@@ -1,3 +1,4 @@
+
 import React, { useCallback, useRef } from 'react';
 import type { Floor } from '../types';
 import { generate3dFloorPlan } from '../services/geminiService';
@@ -69,7 +70,8 @@ export const FloorCard: React.FC<FloorCardProps> = ({ floor, onUpdate }) => {
     }
     onUpdate({ ...floor, isLoading: true, error: null });
     try {
-      const generatedUrl = await generate3dFloorPlan(floor.originalImage);
+      // FIX: Pass the model name to generate3dFloorPlan as the second argument.
+      const generatedUrl = await generate3dFloorPlan(floor.originalImage, 'gemini-2.5-flash-image');
       onUpdate({ ...floor, isLoading: false, generatedImageUrl: generatedUrl });
     } catch (e) {
       console.error(e);

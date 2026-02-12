@@ -1,119 +1,35 @@
+
 import { GoogleGenAI } from "@google/genai";
 
 const MASTER_PROMPT = `
-ARCHITECTURAL 3D PROJECT MODE - UNIFIED BUILDING DIRECTIVE
+You are an architectural visualization AI. Convert the provided 2D floor plan into a top-down, isometric, photorealistic 3D render. Prioritize structural accuracy and visual consistency above all else.
 
-CRITICAL DIRECTIVE: You are generating one floor of a SINGLE, UNIFIED multi-floor building. Visual consistency is the absolute highest priority. Every floor you generate for this project MUST look like it belongs to the same building, designed by the same architect, with the same materials and style. ANY deviation will be considered a failure.
+**1. Structural Blueprint Analysis (Highest Priority):**
+- **Goal:** Recreate the 2D blueprint's structure with 100% accuracy. Do not alter proportions, move walls, or change layouts.
+- **Extract & Render the following elements precisely as they appear in the 2D plan:**
+    - Walls, doors (including swing arcs), and windows.
+    - Staircases: Render individual steps, landings, and handrails. Ensure there's a corresponding opening in the floor slab. Match the 'UP' direction arrow exactly.
+    - Open-Air Spaces (e.g., 'terrace', 'balcony'): Use low railings or parapet walls, not full-height walls. Their floor should be durable stone/paver tiles (#9E9E9E).
+    - Room Labels: Find all text labels on the blueprint (e.g., 'Living', 'Bed 1', 'Utility') and render them as simple, dark gray text (#333333) floating just above the floor in the center of their respective rooms.
+    - Exterior Context: Place the entire building on a simple, flat, light concrete ground plane (#D0D0D0) that extends a few feet from the exterior walls.
+    - Vehicles: If a car outline is shown in a garage, render a simple 3D car model in its place.
 
-You are a professional architectural visualization system.
-Convert the provided 2D floor plan into a photorealistic, top-down isometric 3D render.
+**2. Visual Style (Mandatory & Unchanging):**
+- **View:** Fixed top-down isometric.
+- **Lighting:** Flat, even, ambient. **RENDER NO SHADOWS.** This is a critical instruction.
+- **Style:** Clean, minimalist, and professional.
+- **Materials:**
+    - Walls: Matte off-white paint (#F5F5F5).
+    - Main Flooring: Light-colored porcelain tiles (#E0E0E0) with thin, light gray grout lines (#CCCCCC).
+    - Bathroom Flooring: Small, non-slip square gray tiles (#BDBDBD) with slightly darker gray grout (#A0A0A0).
+    - Door & Window Frames: Dark gray metal (#424242).
 
-------------------------------------------------------------
-STRUCTURAL EXTRACTION MODE (HIGHEST PRIORITY)
-------------------------------------------------------------
-Treat the input image as a technical architectural blueprint.
+**3. Furnishing (Controlled):**
+- Only place furniture if a room's function is clearly identified by a label.
+- Keep all entrances, hallways, and major pathways completely clear of objects.
+- If a room's purpose is not labeled, leave it completely empty.
 
-Before rendering:
-1. Identify all wall segments.
-2. Identify all door openings.
-3. Identify all door swing arcs.
-4. Identify all window openings.
-5. Identify staircase location and direction.
-6. Identify areas labeled 'terrace', 'balcony', or 'patio'.
-7. Identify all text labels for rooms and spaces (e.g., 'Living', 'Bed 1', 'Utility', 'Passage').
-
-Then reproduce them EXACTLY.
-
-STRICT REQUIREMENTS:
-- Do NOT move walls, resize rooms, or alter proportions.
-- Structural precision is more important than visual beautification.
-
-------------------------------------------------------------
-ROOM IDENTIFICATION & LABELING (HIGH PRIORITY)
-------------------------------------------------------------
-- Find all text labels on the 2D blueprint that identify rooms or areas (e.g., "Living Room", "Kitchen", "Utility", "Passage", "W.C.").
-- Render these labels as simple, non-intrusive text floating just above the floor in the center of their corresponding rooms in the 3D model.
-- The text must be clean, sans-serif, dark gray (#333333), and easily readable.
-- This labeling is critical for making the plan understandable.
-
-------------------------------------------------------------
-EXTERIOR CONTEXT
-------------------------------------------------------------
-- To showcase the "inside" vs "outside", render a simple, flat ground plane around the entire building footprint.
-- This ground should be a neutral light concrete texture (Hex: #D0D0D0) and extend a few virtual feet from all exterior walls.
-- This provides context and prevents the building from looking like it is floating in a void.
-
-------------------------------------------------------------
-TERRACE & BALCONY RULES (HIGH PRIORITY)
-------------------------------------------------------------
-- Areas marked as 'terrace', 'balcony', or 'patio' are OPEN-AIR spaces.
-- Do NOT render full-height walls around these areas.
-- Do NOT add windows to these areas.
-- Instead, enclose these spaces with a low-profile, modern railing or a short parapet wall (approximately 1 meter high).
-- The floor of the terrace/balcony should be rendered with durable, large-format stone or concrete paver tiles (Hex: #9E9E9E) with visible, dark gray grout lines (Hex: #616161).
-
-------------------------------------------------------------
-STAIRCASE RULES (HIGHEST STRUCTURAL PRIORITY)
-------------------------------------------------------------
-- The staircase is the most critical connection between floors. Its accuracy is paramount.
-- The lines within the staircase rectangle on the blueprint represent individual steps. Render them as such.
-- Position and orientation MUST match the blueprint exactly.
-- Identify the direction of ascent from the blueprint (often indicated by an arrow and/or the label 'UP'). The 3D stairs must follow this direction precisely.
-- Render each individual step, any landings, and simple, modern handrails.
-- Crucially, render a corresponding void or opening in the floor slab for the staircase to pass through.
-- The staircase must be a passable, functional, and unobstructed 3D object that clearly connects to the level above or below.
-- Do NOT rotate, resize, redesign, or misinterpret the staircase.
-
-------------------------------------------------------------
-DOOR & WINDOW RULES
-------------------------------------------------------------
-- Door and window count and placement must match exactly.
-- Door swing direction must match exactly.
-- Do NOT add or remove any doors or windows.
-
-------------------------------------------------------------
-GLOBAL VISUAL LOCK (NON-NEGOTIABLE)
-------------------------------------------------------------
-This visual identity is LOCKED for the entire project. Do NOT deviate.
-
-CAMERA:
-- Fixed top-down isometric view only.
-- NO perspective variation.
-
-MATERIALS & STYLE (MANDATORY):
-- WALLS: Matte, off-white paint (Hex: #F5F5F5). No textures.
-- FLOORING: Light-colored porcelain tiles (Hex: #E0E0E0) laid in a grid pattern with thin, light gray grout lines (Hex: #CCCCCC). The tiles should have a subtle, non-uniform texture.
-- BATHROOM FLOORING: Small, non-slip square gray tiles (Hex: #BDBDBD) with slightly darker gray grout lines (Hex: #A0A0A0).
-- DOORS & WINDOW FRAMES: Simple, dark gray metal (Hex: #424242).
-- STYLE: A clean, minimalist, and professional architectural visualization.
-- High realism is required.
-
-The material and color palette specified above is MANDATORY. Do not introduce new colors or materials.
-
-LIGHTING & SHADOWS:
-- Use flat, even, ambient lighting ONLY.
-- The final render must be completely SHADOWLESS. Do NOT render any shadows from walls, furniture, or any other objects. This is a strict requirement.
-
-------------------------------------------------------------
-INTERIOR PLACEMENT RULES (CONTROLLED MODE)
-------------------------------------------------------------
-- CRITICAL: Entrances, hallways, and major pathways must remain completely clear. Do NOT place any objects that would obstruct movement.
-- Only place furniture if the room function is clearly identifiable from its label.
-- Do NOT guess room purpose or invent decorative elements if not labeled.
-- Maintain clear walking paths and realistic spacing. Do NOT block doors or windows.
-- If room purpose is unclear, leave the room empty.
-
-------------------------------------------------------------
-EXTERIOR & VEHICLE RULES
-------------------------------------------------------------
-- If the blueprint shows a garage containing the outline of a car, render a simple, modern 3D model of a car in that position.
-- Do NOT add cars if they are not explicitly drawn in the 2D plan.
-
-------------------------------------------------------------
-FINAL INSTRUCTION
-------------------------------------------------------------
-Generate ONE high-quality 3D render for this floor only.
-Follow all structural and visual rules strictly.
+**Final Instruction:** Generate one high-quality 3D render based on these rules.
 `;
 
 const fileToBase64 = (file: File): Promise<string> =>
@@ -129,21 +45,9 @@ const fileToBase64 = (file: File): Promise<string> =>
   });
 
 
-export const generate3dFloorPlan = async (floorPlanFile: File): Promise<string> => {
-  // if (!process.env.API_KEY) {
-  //   throw new Error("API_KEY environment variable not set");
-  // }
-
-  // const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-
-  const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-
-if (!apiKey) {
-  throw new Error("VITE_GEMINI_API_KEY environment variable not set");
-}
-
-const ai = new GoogleGenAI({ apiKey });
-
+export const generate3dFloorPlan = async (floorPlanFile: File, modelName: string): Promise<string> => {
+  // FIX: Removed manual API key check as per guidelines. The environment variable is assumed to be present.
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
   const floorPlanBase64 = await fileToBase64(floorPlanFile);
 
@@ -160,7 +64,7 @@ const ai = new GoogleGenAI({ apiKey });
   parts.push({ text: finalPrompt }, floorPlanPart);
 
   const response = await ai.models.generateContent({
-    model: 'gemini-2.5-flash-image',
+    model: modelName,
     contents: { parts: parts },
   });
 
