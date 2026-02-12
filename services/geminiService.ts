@@ -1,4 +1,3 @@
-
 import { GoogleGenAI } from "@google/genai";
 
 const MASTER_PROMPT = `
@@ -32,7 +31,51 @@ You are an architectural visualization AI. Convert the provided 2D floor plan in
 **Final Instruction:** Generate one high-quality 3D render based on these rules.
 `;
 
-const fileToBase64 = (file: File): Promise<string> =>
+const resizeImage = (file: File): Promise<Blob> => {
+  const MAX_WIDTH = 1024;
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      if (!event.target?.result) {
+        return reject(new Error("Could not read file for resizing."));
+      }
+      const img = new Image();
+      img.src = event.target.result as string;
+      img.onload = () => {
+        if (img.width <= MAX_WIDTH) {
+          // If image is already small enough, resolve with the original file blob
+          resolve(file);
+          return;
+        }
+
+        const canvas = document.createElement('canvas');
+        const scaleFactor = MAX_WIDTH / img.width;
+        canvas.width = MAX_WIDTH;
+        canvas.height = img.height * scaleFactor;
+
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          return reject(new Error('Could not get canvas context for resizing.'));
+        }
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+        canvas.toBlob((blob) => {
+          if (blob) {
+            resolve(blob);
+          } else {
+            reject(new Error('Canvas to Blob conversion failed.'));
+          }
+        }, 'image/jpeg', 0.9); // Use jpeg for efficiency
+      };
+      img.onerror = (err) => reject(new Error(`Image load failed: ${err}`));
+    };
+    reader.onerror = (err) => reject(new Error(`File reader error: ${err}`));
+  });
+};
+
+
+const fileToBase64 = (file: Blob): Promise<string> =>
   new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.readAsDataURL(file);
@@ -46,10 +89,10 @@ const fileToBase64 = (file: File): Promise<string> =>
 
 
 export const generate3dFloorPlan = async (floorPlanFile: File, modelName: string): Promise<string> => {
-  // FIX: Removed manual API key check as per guidelines. The environment variable is assumed to be present.
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
-  const floorPlanBase64 = await fileToBase64(floorPlanFile);
+  const resizedImageBlob = await resizeImage(floorPlanFile);
+  const floorPlanBase64 = await fileToBase64(resizedImageBlob);
 
   const finalPrompt = MASTER_PROMPT;
   const parts: ({ text: string } | { inlineData: { data: string, mimeType: string } })[] = [];
@@ -57,7 +100,7 @@ export const generate3dFloorPlan = async (floorPlanFile: File, modelName: string
   const floorPlanPart = {
     inlineData: {
       data: floorPlanBase64,
-      mimeType: floorPlanFile.type,
+      mimeType: resizedImageBlob.type,
     },
   };
 
